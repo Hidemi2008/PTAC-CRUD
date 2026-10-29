@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet, apiPost, apiPut, apiDelete, ApiError } from './api'
 
-const listarUsuarios = () => apiGet('/users')
+const listarUsuarios = (opcoes) => apiGet('/users', opcoes)
 const criarUsuario = (dados) => apiPost('/users', dados)
 const atualizarUsuario = (id, dados) => apiPut(`/users/${id}`, dados)
 const excluirUsuario = (id) => apiDelete(`/users/${id}`)
@@ -16,16 +16,20 @@ export default function App() {
   const [editandoId, setEditandoId] = useState(null)
 
   useEffect(() => {
+    const controle = new AbortController()
+
     async function carregar() {
       try {
-        setUsuarios(await listarUsuarios())
+        setUsuarios(await listarUsuarios({ signal: controle.signal }))
       } catch (e) {
-        setErro(mensagemDeErro(e))
+        if (e.name !== 'AbortError') setErro(mensagemDeErro(e))
       } finally {
-        setCarregando(false)
+        if (!controle.signal.aborted) setCarregando(false)
       }
     }
+
     carregar()
+    return () => controle.abort()
   }, [])
 
   function mensagemDeErro(e) {
