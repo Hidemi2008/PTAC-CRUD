@@ -1,6 +1,6 @@
 // src/App.jsx
 import { useEffect, useState } from 'react'
-import { apiGet, apiPost, apiPut, apiDelete } from './api'
+import { apiGet, apiPost, apiPut, apiDelete, ApiError } from './api'
 
 const listarUsuarios = () => apiGet('/users')
 const criarUsuario = (dados) => apiPost('/users', dados)
@@ -20,13 +20,22 @@ export default function App() {
       try {
         setUsuarios(await listarUsuarios())
       } catch (e) {
-        setErro(e.message)
+        setErro(mensagemDeErro(e))
       } finally {
         setCarregando(false)
       }
     }
     carregar()
   }, [])
+
+  function mensagemDeErro(e) {
+    if (e instanceof ApiError) {
+      if (e.status === 404) return 'Recurso não encontrado.'
+      if (e.status >= 500) return 'Erro no servidor. Tente de novo em instantes.'
+      return `Erro ${e.status}: ${e.statusText}`
+    }
+    return 'Falha de rede: ' + e.message // TypeError: Failed to fetch
+  }
 
   function limparFormulario() {
     setNome('')
@@ -55,7 +64,7 @@ export default function App() {
       }
       limparFormulario()
     } catch (e) {
-      setErro(e.message)
+      setErro(mensagemDeErro(e))
     }
   }
 
@@ -65,7 +74,7 @@ export default function App() {
       await excluirUsuario(id)
       setUsuarios((lista) => lista.filter((u) => u.id !== id))
     } catch (e) {
-      setErro(e.message)
+      setErro(mensagemDeErro(e))
     }
   }
 
